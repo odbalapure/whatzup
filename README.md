@@ -6,8 +6,8 @@ Whatzup is a MERN app which can be used by a society to inform the residents of 
 - **Heroku Link:** https://whatzzzup.herokuapp.com/
 
 ### Demo credentials
-- harishbalapure@gmail.com
-- secret
+- **Admin**: harishbalapure@gmail.com (secret)
+- **User**: ombalapure7@gmail.com (secret)
 
 ## Key features
 - Chat feature using Socket.io
