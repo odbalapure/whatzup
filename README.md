@@ -5,7 +5,7 @@ Whatzup is a MERN app which can be used by a society to inform the residents of 
 - **Netlify Link:** https://whatzup.netlify.app/
 - **Heroku Link:** https://whatzzzup.herokuapp.com/
 
-### Admin credentials
+### Demo credentials
 - harishbalapure@gmail.com
 - secret
 
