@@ -1,4 +1,4 @@
-# whatzup
+# Whatzup
 
 Whatzup is a MERN app which can be used by a society to inform the residents about upcoming events, general and important announcements.
 
