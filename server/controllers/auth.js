@@ -38,7 +38,7 @@ const register = async (req, res) => {
   } catch (err) {
     return res
       .status(500)
-      .json({ msg: "Something went wrong while registration..." });
+      .json({ error: "Something went wrong while registration..." });
   }
 };
 
@@ -71,24 +71,24 @@ const login = async (req, res) => {
 
     // User must provide email and password
     if (!email || !password) {
-      return res.status(400).json({ msg: "Please provide email and password" });
+      return res.status(400).json({ error: "Please provide email and password" });
     }
 
     // Check if the user exists in the database
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(403).json({ msg: "Invalid credentials!" });
+      return res.status(403).json({ error: "Account does not exists, please create one!" });
     }
 
     // Check if user is activated
-    if (!user.activated) {
-      return res.status(403).json({ msg: "Account has not been activated!" });
-    }
+    // if (!user.activated) {
+    //   return res.status(403).json({ error: "Account has not been activated!" });
+    // }
 
     // Compare passwords
     const isPassCorrect = await user.comparePassword(password);
     if (!isPassCorrect) {
-      return res.status(400).json({ msg: "Invalid Credentials!" });
+      return res.status(400).json({ error: "Opps, you entered an incorrect password!", status: 400 });
     }
 
     const token = user.createJwt();
@@ -96,11 +96,12 @@ const login = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      error: user.activated && `Please confirm your account with ${user.email}!`,
       token,
     });
   } catch (err) {
     return res.status(StatusCodes.OK).json({
-      msg: "Something went wrong whie logging in...",
+      error: "Something went wrong with the server whie logging you in...",
     });
   }
 };
@@ -113,7 +114,7 @@ const login = async (req, res) => {
 const forgotPassword = async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
   if (!user || !user.activated) {
-    return res.status(404).json({ msg: "User does not exist" });
+    return res.status(404).json({ error: "User does not exist" });
   }
 
   transporter.sendMail({
@@ -138,7 +139,7 @@ const resetPassword = async (req, res) => {
 
   const user = await User.findOne({ email: req.body.email });
   if (!user || !user.activated) {
-    return res.status(404).json({ msg: "User does not exist" });
+    return res.status(404).json({ error: "User does not exist" });
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -150,7 +151,7 @@ const resetPassword = async (req, res) => {
     { upsert: true }
   );
 
-  res.status(200).json({ msg: "Password reset successful" });
+  res.status(200).json({ error: "Password reset successful" });
 };
 
 module.exports = {

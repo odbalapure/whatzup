@@ -1,14 +1,12 @@
 import { useNavigate } from "react-router";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
-
-const url = process.env.REACT_APP_API_URL + "/auth/login";
+import { Api } from "../utils/Api";
 
 function Login() {
-  const [warning, setWarning] = useState("");
   const emailRef = useRef();
   const passwordRef = useRef();
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
   const navigateToHome = () => navigate("/", { replace: true });
@@ -19,32 +17,31 @@ function Login() {
    * @param {*} event
    */
   const loginDetails = async () => {
-    setWarning("");
-
     if (emailRef.current.value === "" || passwordRef.current.value === "") {
-      setWarning("Email and password are mandatory!");
+      setError("Email and password are mandatory!");
       return;
     }
-
-    try {
-      const response = await axios.post(`${url}`, {
-        email: emailRef.current.value,
-        password: passwordRef.current.value,
-      });
-
-      const localStorageObj = {
+    const response = await Api(
+      "auth/login",
+      "POST",
+      { email: emailRef.current.value, password: passwordRef.current.value },
+      false
+    );
+    if (response?.error) {
+      setError(response?.error);
+      return;
+    }
+    localStorage.setItem(
+      "whatzup_user",
+      JSON.stringify({
         name: response.data.name,
         email: response.data.email,
         role: response.data.role,
-        token: response.data.token,
-      };
-
-      localStorage.setItem("whatzup_user", JSON.stringify(localStorageObj));
-      navigateToHome();
-      window.location.reload(false);
-    } catch (error) {
-      setWarning("User may not exist or the account has not been verified!");
-    }
+        token: response.data.token
+      })
+    );
+    navigateToHome();
+    window.location.reload(false);
   };
 
   return (
@@ -57,7 +54,7 @@ function Login() {
           border: "1px solid lightgray",
           padding: "1rem",
           margin: "2rem",
-          borderRadius: "1rem",
+          borderRadius: "1rem"
         }}
       >
         <form>
@@ -115,14 +112,14 @@ function Login() {
         </form>
       </div>
       <div>
-        {warning ? (
+        {error && (
           <p
             className="d-flex justify-content-center alert alert-danger"
             role="alert"
           >
-            {warning}
+            {error}
           </p>
-        ) : null}
+        )}
       </div>
     </div>
   );
