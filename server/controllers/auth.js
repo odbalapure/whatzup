@@ -20,22 +20,30 @@ const transporter = nodemailer.createTransport(
  */
 const register = async (req, res) => {
   try {
+    const existingUser = await User.findOne({ email: req.body.email });
+    console.log('asdasdasdasdasd', existingUser);
+    if (existingUser) {
+      return res.status(403).json({ error: "Account already exists, please login!" });
+    }
+
     const user = await User.create({ ...req.body });
     const token = user.createJwt();
 
-    transporter.sendMail({
-      to: user.email,
-      from: "ombalapure@outlook.com",
-      subject: "Whatzup - Email Confirmation",
-      html: `<h4>Hi ${user.name}! Please click the below link for email confirmation.</h4>
-      <p>Confirm email for <a href="https://whatzzzup.herokuapp.com/api/v1/auth/confirm/${token}">${user.email}</a></p>
-    `,
-    });
+    // transporter.sendMail({
+    //   to: user.email,
+    //   from: "ombalapure@outlook.com",
+    //   subject: "Whatzup - Email Confirmation",
+    //   html: `<h4>Hi ${user.name}! Please click the below link for email confirmation.</h4>
+    //   <p>Confirm email for <a href="https://whatzzzup.herokuapp.com/api/v1/auth/confirm/${token}">${user.email}</a></p>
+    // `,
+    // });
 
+    console.log('user', user);
     res
       .status(StatusCodes.CREATED)
       .json({ name: user.name, email: user.email, activated: false, token });
   } catch (err) {
+    console.log('err', err);
     return res
       .status(500)
       .json({ error: "Something went wrong while registration..." });
@@ -96,7 +104,6 @@ const login = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      error: user.activated && `Please confirm your account with ${user.email}!`,
       token,
     });
   } catch (err) {
@@ -113,20 +120,20 @@ const login = async (req, res) => {
  */
 const forgotPassword = async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
-  if (!user || !user.activated) {
-    return res.status(404).json({ error: "User does not exist" });
+  if (!user) {
+    return res.status(404).json({ error: "User does not exist!" });
   }
 
-  transporter.sendMail({
-    to: user.email,
-    from: "ombalapure@outlook.com",
-    subject: "Whatzup - Password Reset",
-    html: `<h4>Hi ${user.name}! Please click the below link to reset your password.</h4>
-      <p>Confirm email for <a href="https://whatzzzup.herokuapp.com/reset-password/${user.email}">${user.email}</a></p>
-    `,
-  });
+  // transporter.sendMail({
+  //   to: user.email,
+  //   from: "ombalapure@outlook.com",
+  //   subject: "Whatzup - Password Reset",
+  //   html: `<h4>Hi ${user.name}! Please click the below link to reset your password.</h4>
+  //     <p>Confirm email for <a href="https://whatzzzup.herokuapp.com/reset-password/${user.email}">${user.email}</a></p>
+  //   `,
+  // });
 
-  res.status(200).json({ nsg: "Password reset link sent!" });
+  res.status(200).json({ msg: `Password reset link sent to ${user.email}!` });
 };
 
 /**

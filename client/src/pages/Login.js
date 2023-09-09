@@ -74,17 +74,6 @@ function Login() {
             />
           </div>
           <div className="my-3 d-flex justify-content-around">
-            <div className="form-check">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                value="Remember"
-                id="remember"
-              />
-              <label className="form-check-label" htmlFor="remember">
-                Remember Me
-              </label>
-            </div>
             <div>
               <Link style={{ textDecoration: "none" }} to="/forgot-password">
                 Forgot Password?

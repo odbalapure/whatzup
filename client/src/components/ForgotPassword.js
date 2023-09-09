@@ -1,28 +1,35 @@
 import { useRef, useState } from "react";
-import axios from "axios";
-
-const url = process.env.REACT_APP_API_URL + "/auth/forgot-password";
+import { showToast } from "../utils/common";
+import CustomToast from "./common/Toast";
+import { Api } from "../utils/Api";
 
 function ForgotPassword() {
-  const [warning, setWarning] = useState("");
   const emailRef = useRef();
+  const [isError, setIsError] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const forgotPasswordDetails = async (event) => {
-    setWarning("");
     event.preventDefault();
-
     if (emailRef) {
       if (emailRef.current.value === "") {
-        setWarning("Please enter an email id!");
+        setIsError(true);
+        showToast("Please enter an email id!", "error");
         return;
       }
-
-      try {
-        await axios.patch(`${url}`, {
-          email: emailRef.current.value,
-        });
-      } catch (error) {
-        setWarning("User does not exist...");
+      const response = await Api(
+        "auth/forgot-password",
+        "PATCH",
+        {
+          email: emailRef.current.value
+        },
+        false
+      );
+      if (response?.error) {
+        setIsError(true);
+        showToast(response?.error, "error");
+      } else {
+        setIsSuccess(true);
+        showToast(response?.msg, "success");
       }
     }
   };
@@ -33,10 +40,10 @@ function ForgotPassword() {
       style={{
         border: "1px solid lightgray",
         marginTop: "2rem",
-        borderRadius: "1rem",
+        borderRadius: "1rem"
       }}
     >
-      <form className="py-5">
+      <form className="p-3">
         <div className="mb-3">
           <label htmlFor="email" className="form-label fw-bold">
             Email
@@ -60,16 +67,8 @@ function ForgotPassword() {
           </button>
         </div>
       </form>
-      <div>
-        {warning ? (
-          <p
-            className="d-flex justify-content-center alert alert-danger"
-            role="alert"
-          >
-            {warning}
-          </p>
-        ) : null}
-      </div>
+      {isError && <CustomToast />}
+      {isSuccess && <CustomToast />}
     </div>
   );
 }

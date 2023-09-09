@@ -1,14 +1,24 @@
 import { useLocation } from "react-router";
-import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import ReactPaginate from "react-paginate";
 import { useGlobalContext } from "../context";
+import isEmpty, { showToast } from "../utils/common";
+import CustomToast from "../components/common/Toast";
+import { Api } from "../utils/Api";
+import CommentsList from "../components/Comments";
+import CommentPlaceholder from "../components/Comments/CommentsPlaceholder";
 
-const url = process.env.REACT_APP_API_URL + "/events";
+const ITEMS_PER_PAGE = 5;
+
+const customStyles = {
+  previousClassName: "pagination-previous",
+  nextClassName: "pagination-next",
+  pageClassName: "pagination-page",
+  breakClassName: "pagination-break"
+};
 
 function SingleEvent() {
   const { isLoggedIn } = useGlobalContext();
-
-  const [comments, setComments] = useState([]);
   const [comment, setComment] = useState("");
 
   /* Get data from another (previous) page */
@@ -16,62 +26,62 @@ function SingleEvent() {
   const eventId = location.state._id;
 
   /* Operation status */
-  const [warning, setWarning] = useState("");
-  const [msg, setMsg] = useState("");
+  const [isError, setIsError] = useState("");
+  const [isSuccess, setIsSuccess] = useState("");
+  const [comments, setComments] = useState([]);
 
-  /**
-   * @desc Get event comments
-   * @method GET
-   */
-  const getEventComments = useCallback(async () => {
-    try {
-      const response = await axios.get(`${url}/${eventId}`);
-      setComments(response.data.comments);
-      setWarning("");
-    } catch (err) {
-      setWarning("Something went wrong while fetching announcements...");
-    }
-  }, [eventId]);
+  const [itemOffset, setItemOffset] = useState(0);
+  const endOffset = itemOffset + ITEMS_PER_PAGE;
+  const currentComments = comments?.slice(itemOffset, endOffset);
+  const pageCount = Math.ceil(comments?.length / ITEMS_PER_PAGE);
+
+  // Invoke when user click to request another page.
+  const handlePageClick = (event) => {
+    const newOffset = (event.selected * ITEMS_PER_PAGE) % comments?.length;
+    console.log(
+      `User requested page number ${event.selected}, which is offset ${newOffset}`
+    );
+    setItemOffset(newOffset);
+  };
 
   useEffect(() => {
-    getEventComments();
-  }, [getEventComments]);
+    Api(`events/${eventId}`, "GET", null, false).then((data) => {
+      setComments(data?.comments);
+    });
+  }, [isSuccess, eventId]);
 
   /**
    * @desc Create a comment
    * @method PATCH
    */
   const createComment = async () => {
-    if (comment === "") {
-      setWarning("Comment is empty :)");
-      setTimeout(() => setWarning(""), 2000);
+    if (!comment || !isLoggedIn) {
+      setIsError(true);
+      showToast(
+        isLoggedIn
+          ? "Comment is empty!"
+          : "You need to login, inorder to comment!",
+        "error"
+      );
       return;
     }
-
-    if (JSON.parse(localStorage.getItem("whatzup_user"))) {
-      const response = await axios.patch(
-        `${url}/${eventId}`,
-        {
-          name: JSON.parse(localStorage.getItem("whatzup_user")).name,
-          comment,
-          createdAt: new Date().toString(),
-        },
-        {
-          headers: {
-            Authorization:
-              "Bearer " +
-              JSON.parse(localStorage.getItem("whatzup_user")).token,
-          },
-        }
-      );
-
-      getEventComments();
-      setMsg(response.data.msg);
-      setWarning("");
-      setTimeout(() => {
-        setMsg("");
-      }, 2000);
+    const response = await Api(
+      `events/${eventId}`,
+      "PATCH",
+      {
+        name: JSON.parse(localStorage.getItem("whatzup_user")).name,
+        comment,
+        createdAt: new Date().toString()
+      },
+      true
+    );
+    if (response?.error) {
+      setIsError(true);
+      showToast(response?.error, "error");
+      return;
     }
+    setIsSuccess(true);
+    showToast("Comment added successfully!", "success");
   };
 
   return (
@@ -79,18 +89,17 @@ function SingleEvent() {
       className="container"
       style={{ marginTop: "5rem", marginBottom: "5rem" }}
     >
-      {/* Event details */}
       <div
         style={{
           border: "1px lightgray solid",
           padding: "1rem",
-          borderRadius: "1rem",
+          borderRadius: "1rem"
         }}
       >
         <div
           style={{
             backgroundColor: "lightgray",
-            marginBottom: "1.5rem",
+            marginBottom: "1.5rem"
           }}
         >
           {location.state.image ? (
@@ -105,7 +114,7 @@ function SingleEvent() {
               style={{
                 textAlign: "center",
                 fontSize: "1.5rem",
-                textShadow: "0px 4px 4px rgba(0,0,0,0.6)",
+                textShadow: "0px 4px 4px rgba(0,0,0,0.6)"
               }}
             >
               No image available
@@ -142,7 +151,6 @@ function SingleEvent() {
         ></textarea>
         <div className="d-grid gap-2 mb-4">
           <button
-            disabled={!isLoggedIn}
             onClick={createComment}
             className="btn btn-dark"
             type="button"
@@ -151,63 +159,24 @@ function SingleEvent() {
           </button>
         </div>
 
-        <div className="mt-4 fw-bold fs-3">{comments.length} Comments</div>
-
-        {comments.map((comment) => {
-          return (
-            <div
-              style={{
-                padding: "1rem",
-                border: "1px solid lightgray",
-                borderRadius: "1rem",
-              }}
-              className="mb-3"
-              key={comment._id}
-            >
-              <div
-                style={{ fontWeight: "500" }}
-                className="d-flex flex-wrap justify-content-between"
-              >
-                <div>{comment.name}</div>
-                <div className="text-muted">
-                  {comment.createdAt
-                    ? new Date(comment.createdAt).toString().substring(0, 10)
-                    : ""}{" "}
-                  (
-                  {comment.createdAt
-                    ? new Date(comment.createdAt)
-                        .toString()
-                        .split(" ")[4]
-                        .substring(0, 5)
-                    : ""}
-                  )
-                </div>
-              </div>
-              <div>{comment.comment}</div>
-            </div>
-          );
-        })}
+        <div className="mt-4 fw-bold fs-3">{comments?.length} Comments</div>
+        {!isEmpty(comments) ? (
+          <CommentsList comments={currentComments} />
+        ) : (
+          <CommentPlaceholder />
+        )}
       </div>
-      <div>
-        {warning ? (
-          <p
-            className="d-flex justify-content-center alert alert-danger"
-            role="alert"
-          >
-            {warning}
-          </p>
-        ) : null}
-      </div>
-      <div>
-        {msg ? (
-          <p
-            className="d-flex justify-content-center alert alert-success"
-            role="alert"
-          >
-            {msg}
-          </p>
-        ) : null}
-      </div>
+      <ReactPaginate
+        breakLabel="..."
+        nextLabel="next >"
+        onPageChange={handlePageClick}
+        pageRangeDisplayed={5}
+        pageCount={pageCount}
+        previousLabel="< previous"
+        renderOnZeroPageCount={null}
+        {...customStyles}
+      />
+      {(isError || isSuccess) && <CustomToast />}
     </div>
   );
 }

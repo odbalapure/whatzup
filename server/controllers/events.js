@@ -24,7 +24,7 @@ const getAllEvents = async (req, res) => {
 const getEventComments = async (req, res) => {
   try {
     const event = await Event.findOne({ _id: req.params.id });
-    res.status(201).json({ comments: event.comments });
+    res.status(200).json({ comments: event.comments });
   } catch (err) {
     return res
       .status(500)
