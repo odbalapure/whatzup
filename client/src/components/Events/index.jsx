@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import useAsync from "../../hooks/useAsync";
 import EventsCard from "./EventsCard";
 import EventPlaceholder from "./EventPlaceholder";
-import ErrorCard from "../ErrorCard";
+import ErrorCard from "../common/ErrorCard";
 
 function Events() {
   const { data, error } = useAsync("events", "GET", null, false);

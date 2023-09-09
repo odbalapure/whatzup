@@ -2,11 +2,13 @@ import { useNavigate } from "react-router";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Api } from "../utils/Api";
+import { showToast } from "../utils/common";
+import CustomToast from "../components/common/Toast";
 
 function Login() {
   const emailRef = useRef();
   const passwordRef = useRef();
-  const [error, setError] = useState("");
+  const [isError, setIsError] = useState(false);
 
   const navigate = useNavigate();
   const navigateToHome = () => navigate("/", { replace: true });
@@ -17,8 +19,9 @@ function Login() {
    * @param {*} event
    */
   const loginDetails = async () => {
-    if (emailRef.current.value === "" || passwordRef.current.value === "") {
-      setError("Email and password are mandatory!");
+    if (!emailRef.current.value || !passwordRef.current.value) {
+      setIsError(true);
+      showToast("Email & password are mandatory!", "error");
       return;
     }
     const response = await Api(
@@ -28,18 +31,12 @@ function Login() {
       false
     );
     if (response?.error) {
-      setError(response?.error);
+      setIsError(true);
+      showToast(response?.error, "error");
       return;
     }
-    localStorage.setItem(
-      "whatzup_user",
-      JSON.stringify({
-        name: response.data.name,
-        email: response.data.email,
-        role: response.data.role,
-        token: response.data.token
-      })
-    );
+    showToast("Login was successful, welcome", "success");
+    localStorage.setItem("whatzup_user", JSON.stringify(response));
     navigateToHome();
     window.location.reload(false);
   };
@@ -94,6 +91,7 @@ function Login() {
               </Link>
             </div>
           </div>
+          {isError && <CustomToast />}
           <div className="d-grid gap-2">
             <button
               className="btn btn-primary"
@@ -110,16 +108,6 @@ function Login() {
             </div>
           </div>
         </form>
-      </div>
-      <div>
-        {error && (
-          <p
-            className="d-flex justify-content-center alert alert-danger"
-            role="alert"
-          >
-            {error}
-          </p>
-        )}
       </div>
     </div>
   );

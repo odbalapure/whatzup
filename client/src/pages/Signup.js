@@ -1,12 +1,10 @@
 import { useRef, useState } from "react";
-import axios from "axios";
-
-const url = process.env.REACT_APP_API_URL + "/auth/register";
+import { Api } from "../utils/Api";
+import { showToast } from "../utils/common";
+import CustomToast from "../components/common/Toast";
 
 function Register() {
-  /* Operation status */
-  const [success, setSuccess] = useState(false);
-  const [warning, setWarning] = useState("");
+  const [isError, setIsError] = useState(false);
 
   /* Form fields */
   const nameRef = useRef();
@@ -21,41 +19,48 @@ function Register() {
    */
   const signupDetails = async () => {
     if (
-      emailRef.current.value === "" ||
-      passwordRef.current.value === "" ||
-      phoneRef.current.value === "" ||
-      passwordRef.current.value === ""
+      !emailRef.current.value ||
+      !passwordRef.current.value ||
+      !phoneRef.current.value ||
+      !passwordRef.current.value
     ) {
-      setWarning("All fields are mandatory!");
+      setIsError(true);
+      showToast(
+        "All fields are mandatory!",
+        "error",
+        { position: "top-right" },
+        0
+      );
       return;
-    } else {
-      setWarning("");
     }
 
-    const user = {
-      name: nameRef.current.value,
-      email: emailRef.current.value,
-      phone: "+91-" + phoneRef.current.value,
-      password: passwordRef.current.value,
-    };
-
     try {
-      const response = await axios.post(`${url}`, user);
-
-      const localStorageObj = {
-        email: response.data.email,
-        token: response.data.token,
-        activated: response.data.activated,
-      };
-
-      localStorage.setItem(
-        "url_shortner_user",
-        JSON.stringify(localStorageObj)
+      const response = await Api(
+        "auth/register",
+        "POST",
+        {
+          name: nameRef.current.value,
+          email: emailRef.current.value,
+          phone: "+91-" + phoneRef.current.value,
+          password: passwordRef.current.value
+        },
+        false
       );
-
-      setSuccess(true);
+      if (response?.error) {
+        setIsError(true);
+        showToast(response?.error, "error");
+        return;
+      }
+      showToast(
+        `An email has been sent to ${response?.email} , to confirm your registration!`,
+        "success",
+        { position: "top-right" },
+        0
+      );
+      localStorage.setItem("url_shortner_user", JSON.stringify(response));
     } catch (error) {
-      setWarning("User registration failed, try again some time later...");
+      setIsError("User registration failed, try again some time later...");
+      showToast("User registration failed, try again some time later", "error");
     }
   };
 
@@ -70,7 +75,7 @@ function Register() {
           padding: "1rem",
           margin: "2rem",
           borderRadius: "1rem",
-          boxSizing: "border-box",
+          boxSizing: "border-box"
         }}
       >
         <form>
@@ -123,27 +128,7 @@ function Register() {
           </div>
         </form>
       </div>
-      <div>
-        {warning ? (
-          <p
-            className="d-flex justify-content-center alert alert-danger"
-            role="alert"
-          >
-            Username, Email and Password are mandatory!
-          </p>
-        ) : null}
-      </div>
-      <div>
-        {success ? (
-          <p
-            className="d-flex justify-content-center alert alert-success"
-            role="alert"
-          >
-            An email has been sent to <b>{emailRef.current.value}</b>, to
-            confirm your registration!
-          </p>
-        ) : null}
-      </div>
+      <div>{isError ? <CustomToast /> : null}</div>
     </div>
   );
 }
